@@ -355,34 +355,79 @@
                 <section class="normal" id="section-gitbook_20">
                 
                     <h1 id="higher-order-functions">Higher Order Functions</h1>
-<p>Higher order functions, are functions that accept other functions as arguments or return a function it generates.</p>
-<p>This is a <em>fancy</em> and extremely powerful construct available in JavaScript and other high-level languages (python, lisp, ...)</p>
-<p>Now lets pass our <code>double</code> function as an argument to another function called <code>transform</code> :</p>
-<pre><code class="lang-javascript"><span class="hljs-comment">// Our double function</span>
+<p>Higher order functions are functions that manipulate other functions.
+For example, a function can take other functions as arguments and/or produce a function as its return value.
+Such <em>fancy</em> functional techniques are powerful constructs available to you in JavaScript and other high-level languages like python, lisp, etc.</p>
+<p>We will now create two simple functions <code>add_2</code> and <code>double</code> and higher order 
+function called <code>map(f,list)</code> which applies the function <code>f</code> (the first argument)
+to each of the elements in the array <code>list</code> (the second argument).</p>
+<pre><code class="lang-javascript"><span class="hljs-comment">// Define two simple functions </span>
+<span class="hljs-keyword">var</span> add_2 = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(x)</span> {</span> 
+    <span class="hljs-keyword">return</span> x + <span class="hljs-number">2</span>; 
+};
 <span class="hljs-keyword">var</span> double = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(x)</span> {</span>
     <span class="hljs-keyword">return</span> <span class="hljs-number">2</span> * x;
 };
 
-<span class="hljs-comment">// A function that accepts two arguments</span>
-<span class="hljs-comment">// first the function to call</span>
-<span class="hljs-comment">// second the value to call it on</span>
-<span class="hljs-keyword">var</span> transform = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(func, value)</span> {</span>
-    <span class="hljs-keyword">return</span> func(value);
+<span class="hljs-comment">// map is cool function that accepts 2 arguments:</span>
+<span class="hljs-comment">//  func    the function to call</span>
+<span class="hljs-comment">//  list    a array of values to call func on</span>
+<span class="hljs-keyword">var</span> map = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(func, list)</span> {</span>    
+    <span class="hljs-keyword">var</span> output=[];              <span class="hljs-comment">// output list </span>
+    <span class="hljs-keyword">for</span>(idx <span class="hljs-keyword">in</span> list) {
+        output.push( func(list[idx]) );
+    }
+    <span class="hljs-keyword">return</span> output;
 }
 
-<span class="hljs-comment">// This does the same as double(3)</span>
-transform(double, <span class="hljs-number">3</span>);
+
+<span class="hljs-comment">// We use map to apply a function to an entire list </span>
+<span class="hljs-comment">// of inputs to "map" them to a list of corresponding outputs</span>
+map(add_2, [<span class="hljs-number">5</span>,<span class="hljs-number">6</span>,<span class="hljs-number">7</span>]) <span class="hljs-comment">// =&gt; [7, 8, 9]</span>
+map(double, [<span class="hljs-number">5</span>,<span class="hljs-number">6</span>,<span class="hljs-number">7</span>]) <span class="hljs-comment">// =&gt; [10, 12, 14]</span>
 </code></pre>
-<p>The above example was intentionally simple, having functions as values grants enormous flexibility and allows for many powerful constructs.</p>
-<p>Now lets create a function called <code>buildMultiplier</code> that takes a number <code>x</code> and returns a function that multiplies it&#39;s argument by <code>x</code> :</p>
+<p>The functions in the above example were intentionally simple, 
+and serves to illustrate that passing functions as arguments 
+to other functions allows for flexibility when building things.</p>
+<p>For example, if we notice that we use the invocations <code>map(add_2, ...)</code> and <code>map(double, ...)</code> very often in our code, we could decide we want to create two special-purpse list processors that have the desired operation baked into them. Using function composition, we could do this as follows:</p>
+<pre><code class="lang-javascript">process_add_2 = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(list)</span> {</span>
+    <span class="hljs-keyword">return</span> map(add_2, list);
+}
+process_double = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(list)</span> {</span>
+    <span class="hljs-keyword">return</span> map(double, list);
+}
+process_add_2([<span class="hljs-number">5</span>,<span class="hljs-number">6</span>,<span class="hljs-number">7</span>]) <span class="hljs-comment">// =&gt; [7, 8, 9]</span>
+process_double([<span class="hljs-number">5</span>,<span class="hljs-number">6</span>,<span class="hljs-number">7</span>]) <span class="hljs-comment">// =&gt; [10, 12, 14]</span>
+</code></pre>
+<p>Now let&#39;s create a function called <code>buildProcessor</code> that takes a function <code>func</code> as input
+and returns a <code>func</code>-processor, that is, a function that applies <code>func</code> to each input in list.</p>
+<pre><code class="lang-javascript"><span class="hljs-comment">// a function that generates a list processor that performs </span>
+<span class="hljs-keyword">var</span> buildProcessor = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(func)</span> {</span>
+    <span class="hljs-keyword">var</span> process_func = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(list)</span> {</span>
+        <span class="hljs-keyword">return</span> map(func, list);
+    }
+    <span class="hljs-keyword">return</span> process_func;
+}
+<span class="hljs-comment">// calling buildProcessor returns a functoin which is called with a list input</span>
+
+
+<span class="hljs-comment">// using buildProcessor we could generate the add_2 and double list processors as follows:</span>
+process_add_2 = buildProcessor(add_2);
+process_double = buildProcessor(double);
+
+process_add_2([<span class="hljs-number">5</span>,<span class="hljs-number">6</span>,<span class="hljs-number">7</span>]) <span class="hljs-comment">// =&gt; [7, 8, 9]</span>
+process_double([<span class="hljs-number">5</span>,<span class="hljs-number">6</span>,<span class="hljs-number">7</span>]) <span class="hljs-comment">// =&gt; [10, 12, 14]</span>
+</code></pre>
+<p>Let&#39;s look at another example.
+We&#39;ll create a function called <code>buildMultiplier</code> that takes a number <code>x</code> as input and returns a function that multiplies it&#39;s argument by x :</p>
 <pre><code class="lang-javascript"><span class="hljs-keyword">var</span> buildMultiplier = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(x)</span> {</span>
     <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(y)</span> {</span>
         <span class="hljs-keyword">return</span> x * y;
     }
 }
 
-<span class="hljs-keyword">var</span> double = buildMultilplier(<span class="hljs-number">2</span>);
-<span class="hljs-keyword">var</span> triple = buildMultilplier(<span class="hljs-number">3</span>);
+<span class="hljs-keyword">var</span> double = buildMultiplier(<span class="hljs-number">2</span>);
+<span class="hljs-keyword">var</span> triple = buildMultiplier(<span class="hljs-number">3</span>);
 
 double(<span class="hljs-number">3</span>); <span class="hljs-comment">// =&gt; 6</span>
 triple(<span class="hljs-number">3</span>); <span class="hljs-comment">// =&gt; 9</span>
